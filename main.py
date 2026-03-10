@@ -13,7 +13,7 @@ def conectar_sheets():
 
 # Uso no código:
 gc = conectar_sheets()
-sh = gc.open_by_key('https://docs.google.com/spreadsheets/d/1j315AVuP2fwk36ULcHEhEtYIO-9zjdSiOi-G97Vz64U/edit?gid=1202765766#gid=1202765766')
+sh = gc.open_by_key('1j315AVuP2fwk36ULcHEhEtYIO-9zjdSiOi-G97Vz64U')
 
 # 2. Função para buscar LPA e VPA no Investing
 def buscar_dados_investing(ticker):
