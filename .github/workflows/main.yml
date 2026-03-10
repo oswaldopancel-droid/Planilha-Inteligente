@@ -1,0 +1,27 @@
+name: Atualizar Planilha de Ações
+
+on:
+  push:
+    branches: [ main ]  # Roda sempre que você salvar algo no GitHub
+  schedule:
+    - cron: '0 12 * * 1-5' # Roda automaticamente às 12:00 (UTC) de segunda a sexta
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar código do repositório
+        uses: actions/checkout@v3
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Instalar bibliotecas
+        run: pip install -r requirements.txt
+
+      - name: Executar Script
+        env:
+          GOOGLE_SHEETS_CREDS: ${{ secrets.GOOGLE_SHEETS_CREDS }}
+        run: main.py # TROQUE PELO NOME DO SEU ARQUIVO .PY
