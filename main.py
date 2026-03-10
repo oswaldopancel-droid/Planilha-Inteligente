@@ -2,18 +2,28 @@ import os
 import json
 import gspread
 
-def conectar_sheets():
-    # Verifica se estamos rodando no GitHub (procura pela Secret)
+def conectar_google():
     if 'GOOGLE_SHEETS_CREDS' in os.environ:
-        creds_dict = json.loads(os.environ['GOOGLE_SHEETS_CREDS'])
-        return gspread.service_account_from_dict(creds_dict)
+        # Pega a secret bruta
+        creds_raw = os.environ['GOOGLE_SHEETS_CREDS']
+        
+        # Remove espaços em branco no início/fim e corrige quebras de linha duplas
+        creds_clean = creds_raw.strip().replace('\\\\n', '\\n')
+        
+        try:
+            creds_dict = json.loads(creds_clean)
+            return gspread.service_account_from_dict(creds_dict)
+        except Exception as e:
+            print(f"Erro ao processar o JSON da Secret: {e}")
+            raise
     else:
-        # Se estiver no seu PC, ele usa o arquivo local
+        # Local (PC)
         return gspread.service_account(filename='credentials.json')
 
-# Uso no código:
-gc = conectar_sheets()
+# Inicialização
+gc = conectar_google()
 sh = gc.open_by_key('1j315AVuP2fwk36ULcHEhEtYIO-9zjdSiOi-G97Vz64U')
+worksheet = sh.get_worksheet(0)
 
 # 2. Função para buscar LPA e VPA no Investing
 def buscar_dados_investing(ticker):
