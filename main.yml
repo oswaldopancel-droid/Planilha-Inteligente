@@ -1,1 +1,3 @@
-pip install gspread requests beautifulsoup4
+gspread
+requests
+beautifulsoup4
