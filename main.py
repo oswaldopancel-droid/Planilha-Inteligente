@@ -5,7 +5,7 @@ import time
 
 # 1. Configuração do Google Sheets
 gc = gspread.service_account(filename='credentials.json')
-sh = gc.open_by_key('ID_DA_SUA_PLANILHA')
+sh = gc.open_by_key('https://docs.google.com/spreadsheets/d/1j315AVuP2fwk36ULcHEhEtYIO-9zjdSiOi-G97Vz64U/edit?gid=1202765766#gid=1202765766')
 worksheet = sh.get_worksheet(0) # Primeira aba
 
 # 2. Função para buscar LPA e VPA no Investing
