@@ -1,26 +1,57 @@
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+import requests
+from bs4 import BeautifulSoup
+import time
 
-# Configura as permissões
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
-client = gspread.authorize(creds)
+# 1. Configuração do Google Sheets
+gc = gspread.service_account(filename='credentials.json')
+sh = gc.open_by_key('ID_DA_SUA_PLANILHA')
+worksheet = sh.get_worksheet(0) # Primeira aba
 
-# Abre a planilha pelo nome exato
-ss = client.open("FINANCEIRO 2026")
-sheet = ss.sheet1 # Seleciona a primeira aba
-
-# Exemplo: Lendo tickers da Coluna A e limpando dados
-tickers = sheet.col_values(1)[1:] # Pula o cabeçalho
-
-for i, ticker in enumerate(tickers, start=2):
-    # Aqui você chamaria sua função de busca (ex: analista_precisao)
-    # Supondo que você buscou o LPA real e o DPA real:
-    lpa_real = 1.67  # Exemplo Taesa
-    dpa_real = 3.24
-    payout = (dpa_real / lpa_real) # Python faz a conta sem erro de célula
+# 2. Função para buscar LPA e VPA no Investing
+def buscar_dados_investing(ticker):
+    # O Investing costuma usar o padrão: investing.com/equities/nome-do-ativo
+    # Para ativos brasileiros, geralmente é 'ticker-sa' (ex: petr4-sa)
+    url = f"https://br.investing.com/equities/{ticker.lower()}-sa"
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
     
-    # Atualiza as colunas L (LPA) e N (Payout)
-    sheet.update_cell(i, 12, lpa_real) 
-    sheet.update_cell(i, 14, f"{payout:.2%}") # Já envia formatado como %
-    print(f"✅ {ticker} atualizado com Payout de {payout:.2%}")
+    try:
+        response = requests.get(url, headers=headers)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # O Investing muda a estrutura com frequência. 
+        # Geralmente os dados ficam em elementos com data-test="LPA" ou em tabelas de resumo.
+        # Este é um exemplo de captura por texto (mais resiliente a mudanças de ID)
+        lpa = soup.find(text="LPA").find_next('span').text if soup.find(text="LPA") else "N/A"
+        vpa = soup.find(text="VPA").find_next('span').text if soup.find(text="VPA") else "N/A"
+        
+        return lpa, vpa
+    except Exception as e:
+        print(f"Erro ao buscar {ticker}: {e}")
+        return "Erro", "Erro"
+
+# 3. Loop para ler da coluna A (linhas 2 a 11) e escrever em K e M
+def processar_planilha():
+    # Lê todos os tickers de A2 até A11
+    tickers = worksheet.get('A2:A11')
+    
+    for i, row in enumerate(tickers):
+        if not row: continue
+        ticker = row[0]
+        print(f"Buscando dados para: {ticker}...")
+        
+        lpa, vpa = buscar_dados_investing(ticker)
+        
+        # Linha atual na planilha (começa em 2)
+        row_idx = i + 2
+        
+        # Atualiza Coluna K (LPA) e Coluna M (VPA)
+        # K é a 11ª coluna, M é a 13ª
+        worksheet.update_cell(row_idx, 11, lpa)
+        worksheet.update_cell(row_idx, 13, vpa)
+        
+        # Pausa curta para evitar bloqueio do site
+        time.sleep(2)
+
+if __name__ == "__main__":
+    processar_planilha()
