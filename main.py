@@ -1,12 +1,19 @@
+import os
+import json
 import gspread
-import requests
-from bs4 import BeautifulSoup
-import time
 
-# 1. Configuração do Google Sheets
-gc = gspread.service_account(filename='credentials.json')
+def conectar_sheets():
+    # Verifica se estamos rodando no GitHub (procura pela Secret)
+    if 'GOOGLE_SHEETS_CREDS' in os.environ:
+        creds_dict = json.loads(os.environ['GOOGLE_SHEETS_CREDS'])
+        return gspread.service_account_from_dict(creds_dict)
+    else:
+        # Se estiver no seu PC, ele usa o arquivo local
+        return gspread.service_account(filename='credentials.json')
+
+# Uso no código:
+gc = conectar_sheets()
 sh = gc.open_by_key('https://docs.google.com/spreadsheets/d/1j315AVuP2fwk36ULcHEhEtYIO-9zjdSiOi-G97Vz64U/edit?gid=1202765766#gid=1202765766')
-worksheet = sh.get_worksheet(0) # Primeira aba
 
 # 2. Função para buscar LPA e VPA no Investing
 def buscar_dados_investing(ticker):
